@@ -1,0 +1,8 @@
+x := 1;
+res := 1;
+if x > 0 then
+ repeat
+   res := res * x;
+   x := x - 1
+ until x < 1;
+else skip

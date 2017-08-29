@@ -1,0 +1,14 @@
+n := 25;
+i := 0;
+t := i * i;
+if ~ (t = n) then
+  repeat
+	t := i * i;
+	if ~ (t = n) then
+		i := i + 1
+	else
+		skip
+  until t = n
+else
+  skip
+end
