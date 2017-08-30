@@ -1,6 +1,6 @@
 module Parser where
 
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec 
 import Text.Parsec.Token
 import Text.Parsec.Language (emptyDef)
 import AST
@@ -25,21 +25,46 @@ lis = makeTokenParser (emptyDef   { commentStart  = "/*"
                                   })
   
 ----------------------------------
---- Parser de expressiones enteras
+-- Funciones auxiliares
+----------------------------------
+
+nsymbol :: String -> Parser String
+nsymbol = symbol lis
+
+nnatural :: Parser Integer
+nnatural = natural lis
+
+nidentifier :: Parser String
+nidentifier = identifier lis
+
+parseOp :: String -> (a -> b -> c) -> Parser (a -> b -> c)
+parseOp s op = nsymbol s >> return op
+
+-----------------------------------
+-- Parser de expressiones enteras
 -----------------------------------
 
 intexp :: Parser IntExp
-intexp  = undefined
+intexp  = --try
+            do{ x <- nnatural ; return $ Const x }
+        <|> do{ v <- nidentifier ; return $ Var v }
+        <|> do{ nsymbol "-" ; i <- intexp ; return $ UMinus i}
+        <|> intexp `chainl1` addop
+        <|> intexp `chainl1` mulop
+
+addop, mulop :: Parser (IntExp -> IntExp -> IntExp)
+addop =   (parseOp "+" Plus)  <|> (parseOp "-" Minus)
+mulop =   (parseOp "*" Times) <|> (parseOp "/" Div)
 
 -----------------------------------
---- Parser de expressiones booleanas
+-- Parser de expressiones booleanas
 ------------------------------------
 
 boolexp :: Parser BoolExp
 boolexp = undefined
 
 -----------------------------------
---- Parser de comandos
+-- Parser de comandos
 -----------------------------------
 
 comm :: Parser Comm
@@ -50,3 +75,4 @@ comm = undefined
 ------------------------------------
 parseComm :: SourceName -> String -> Either ParseError Comm
 parseComm = parse (totParser comm)
+
