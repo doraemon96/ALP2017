@@ -16,12 +16,13 @@ totParser p = do
 
 -- Analizador de Tokens
 lis :: TokenParser u
-lis = makeTokenParser (emptyDef   { commentStart  = "/*"
-                                  , commentEnd    = "*/"
-                                  , commentLine   = "//"
-                                  , opLetter      = char '='
-                                  , reservedNames = ["true","false","skip","if",
-                                                     "then","else","end", "while","do"]
+lis = makeTokenParser (emptyDef   { commentStart    = "/*"
+                                  , commentEnd      = "*/"
+                                  , commentLine     = "//"
+                                  , opLetter        = char '='
+                                  , reservedOpNames = ["+","-","*","/","=","<",">","&","|","~",":=",";"]
+                                  , reservedNames   = ["true","false","skip","if",
+                                                       "then","else","end", "repeat","until"]
                                   })
   
 ----------------------------------
@@ -37,20 +38,36 @@ nnatural = natural lis
 nidentifier :: Parser String
 nidentifier = identifier lis
 
-parseOp :: String -> (a -> b -> c) -> Parser (a -> b -> c)
-parseOp s op = nsymbol s >> return op
+nparens :: Parser a -> Parser a
+nparens = parens lis
+
+nreserved :: String -> Parser ()
+nreserved = reserved lis
+
+nsemi :: Parser String
+nsemi = semi lis
+
+nreservedOp :: String -> Parser ()
+nreservedOp = reservedOp lis
+
+parseOp :: String -> (a -> a -> a) -> Parser (a -> a -> a)
+parseOp s op = nreservedOp s >> return op
 
 -----------------------------------
 -- Parser de expressiones enteras
 -----------------------------------
 
 intexp :: Parser IntExp
-intexp  = --try
-            do{ x <- nnatural ; return $ Const x }
-        <|> do{ v <- nidentifier ; return $ Var v }
-        <|> do{ nsymbol "-" ; i <- intexp ; return $ UMinus i}
-        <|> intexp `chainl1` addop
-        <|> intexp `chainl1` mulop
+intexp  = chainl1 intops addop
+
+intops :: Parser IntExp
+intops = chainl1 iatom mulop
+
+iatom :: Parser IntExp
+iatom = try (do{ x <- nnatural ; return $ Const x })
+        <|> try (do{ v <- nidentifier ; return $ Var v })
+        <|> do{ nsymbol "-" ; i <- intexp ; return $ UMinus i }
+        <|> (nparens intexp)
 
 addop, mulop :: Parser (IntExp -> IntExp -> IntExp)
 addop =   (parseOp "+" Plus)  <|> (parseOp "-" Minus)
@@ -61,15 +78,49 @@ mulop =   (parseOp "*" Times) <|> (parseOp "/" Div)
 ------------------------------------
 
 boolexp :: Parser BoolExp
-boolexp = undefined
+boolexp = chainl1 andexp bitor
+ 
+andexp :: Parser BoolExp
+andexp = chainl1 batom bitand 
+
+batom :: Parser BoolExp
+batom =     do{ nreserved "true" ; return BTrue }
+        <|> do{ nreserved "false" ; return BFalse }
+        <|> try (do{ i1 <- intexp ; nreservedOp "=" ;
+                     i2 <- intexp ; return (Eq i1 i2) })
+        <|> try (do{ i1 <- intexp ; nreservedOp "<" ;
+                     i2 <- intexp ; return (Lt i1 i2) })
+        <|> try (do{ i1 <- intexp ; nreservedOp ">" ;
+                     i2 <- intexp ; return (Gt i1 i2) })
+        <|> try (do{ nreservedOp "~" ; i <- boolexp ; 
+                     return (Not i) })
+        <|> (nparens boolexp)
+
+bitor, bitand :: Parser (BoolExp -> BoolExp -> BoolExp)
+bitor = parseOp "|" Or
+bitand = parseOp "&" And
 
 -----------------------------------
 -- Parser de comandos
 -----------------------------------
 
 comm :: Parser Comm
-comm = undefined
+comm = chainl1 catom seqop
 
+catom :: Parser Comm
+catom =   do{ nreserved "skip"; return Skip }
+      <|> try (do{ v <- nidentifier ; nreservedOp ":=" ;
+                   i <- intexp ; return (Let v i) })
+      <|> do{ nreserved "if"; b <- boolexp ;
+              nreserved "then" ; c1 <- comm ;
+              nreserved "else" ; c2 <- comm ;
+              nreserved "end" ; return (Cond b c1 c2) }
+      <|> do{ nreserved "repeat"; c <- comm ;
+              nreserved "until" ; b <- boolexp ;
+              return (Repeat c b) }
+
+seqop :: Parser (Comm -> Comm -> Comm)
+seqop = parseOp ";" Seq
 ------------------------------------
 -- Función de parseo
 ------------------------------------
