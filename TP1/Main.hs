@@ -18,6 +18,6 @@ run ifile =
     s <- readFile ifile
     case parseComm ifile s of
       Left error -> print error
---    Right t    -> print (eval t) --imprimir el resultado de evaluar.
-      Right t    -> print t        --imprimir sin evaluar (para testear Parser)
+      Right t    -> print (eval t) --imprimir el resultado de evaluar.
+--      Right t    -> print t        --imprimir sin evaluar (para testear Parser)
       

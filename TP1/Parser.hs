@@ -20,7 +20,8 @@ lis = makeTokenParser (emptyDef   { commentStart    = "/*"
                                   , commentEnd      = "*/"
                                   , commentLine     = "//"
                                   , opLetter        = char '='
-                                  , reservedOpNames = ["+","-","*","/","=","<",">","&","|","~",":=",";"]
+                                  , reservedOpNames = ["+","-","*","/","=","<",">","&","|","~"
+                                                      ,":=",";",":","?"]
                                   , reservedNames   = ["true","false","skip","if",
                                                        "then","else","end", "repeat","until"]
                                   })
@@ -64,10 +65,13 @@ intops :: Parser IntExp
 intops = chainl1 iatom mulop
 
 iatom :: Parser IntExp
-iatom = try (do{ x <- nnatural ; return $ Const x })
+iatom =     try (do{ x <- nnatural ; return $ Const x })
         <|> try (do{ v <- nidentifier ; return $ Var v })
-        <|> do{ nsymbol "-" ; i <- intexp ; return $ UMinus i }
-        <|> (nparens intexp)
+        <|> try (do{ nreservedOp "-" ; i <- intexp ; return $ UMinus i })
+        <|> try (nparens intexp)
+        <|> try (do{ b <- boolexp ; nreservedOp "?"; 
+                     i1 <- intexp ; nreservedOp ":";
+                     i2 <- intexp ; return (QInt b i1 i2)})
 
 addop, mulop :: Parser (IntExp -> IntExp -> IntExp)
 addop =   (parseOp "+" Plus)  <|> (parseOp "-" Minus)
@@ -84,17 +88,17 @@ andexp :: Parser BoolExp
 andexp = chainl1 batom bitand 
 
 batom :: Parser BoolExp
-batom =     do{ nreserved "true" ; return BTrue }
-        <|> do{ nreserved "false" ; return BFalse }
+batom =     try (do{ nreserved "true" ; return BTrue })
+        <|> try (do{ nreserved "false" ; return BFalse })
+        <|> try (do{ nreservedOp "~" ; b <- boolexp ; 
+                     return (Not b) })
+        <|> try (nparens boolexp)
         <|> try (do{ i1 <- intexp ; nreservedOp "=" ;
                      i2 <- intexp ; return (Eq i1 i2) })
         <|> try (do{ i1 <- intexp ; nreservedOp "<" ;
                      i2 <- intexp ; return (Lt i1 i2) })
         <|> try (do{ i1 <- intexp ; nreservedOp ">" ;
                      i2 <- intexp ; return (Gt i1 i2) })
-        <|> try (do{ nreservedOp "~" ; i <- boolexp ; 
-                     return (Not i) })
-        <|> (nparens boolexp)
 
 bitor, bitand :: Parser (BoolExp -> BoolExp -> BoolExp)
 bitor = parseOp "|" Or
