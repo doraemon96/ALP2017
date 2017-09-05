@@ -4,7 +4,7 @@ import System.Environment (getArgs)
 import Parser (parseComm)
 
 -- Modificar este import para usar diferentes evaluadores
-import Eval1
+import Eval2
 ---------------------------------------------------------
 
 main :: IO ()
