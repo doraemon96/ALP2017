@@ -69,9 +69,6 @@ iatom =     try (do{ x <- nnatural ; return $ Const x })
         <|> try (do{ v <- nidentifier ; return $ Var v })
         <|> try (do{ nreservedOp "-" ; i <- intexp ; return $ UMinus i })
         <|> try (nparens intexp)
-        <|> try (do{ b <- boolexp ; nreservedOp "?"; 
-                     i1 <- intexp ; nreservedOp ":";
-                     i2 <- intexp ; return (QInt b i1 i2)})
 
 addop, mulop :: Parser (IntExp -> IntExp -> IntExp)
 addop =   (parseOp "+" Plus)  <|> (parseOp "-" Minus)
