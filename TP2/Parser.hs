@@ -18,8 +18,8 @@ module Parser where
   num n = Abs "s" (Abs "z" (num' n))
 
   num':: Integer -> LamTerm
-  num 0   = Lvar "z"
-  num n+1 = App (Lvar "s") (num n)
+  num' n | n == 0 = LVar "z"
+         | n >  0 = App (LVar "s") (num' n)
 
 -------------------------------------------------
 -- Parser de Lambda Cálculo (Gramatica Extendida) 

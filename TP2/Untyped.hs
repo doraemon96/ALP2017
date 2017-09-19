@@ -12,7 +12,14 @@ import Common
 ----------------------------------------------
            
 conversion  :: LamTerm -> Term
-conversion = undefined
+conversion = conversion' []
+
+conversion' :: [String] -> LamTerm -> Term
+conversion' l (LVar x) = case elemIndex x l of
+                         Just n  -> Bound n
+                         Nothing -> Free x
+conversion' l (App p q) = (conversion' l p) :@: (conversion' l q)
+conversion' l (Abs s p) = Lam (conversion' (s:l) p)
 
   
 -------------------------------
