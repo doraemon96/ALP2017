@@ -29,18 +29,18 @@ conversion' l (Abs s p) = Lam (conversion' (s:l) p)
 shift :: Term -> Int -> Int -> Term
 shift (Bound n) c d = if n < c
                       then (Bound n)
-                      else (Bound n+d)
+                      else (Bound (n+d))
 --shift (Free x) c d  = (Free x) PREGUNTAR
 shift (p :@: q) c d = (shift p c d) :@: (shift q c d)
 shift (Lam p) c d   = Lam (shift p (c+1) d)
   
   
 subst :: Term -> Term -> Int -> Term
-subst (Bound n) r i = if n = i
+subst (Bound n) r i = if n == i
                       then r
-                      else n
+                      else (Bound n)
 --subst (Free x) r i  = Free x PREGUNTAR
-subst (p :@: q) r   = (subst p r i) :@: (subst q r i)
+subst (p :@: q) r i = (subst p r i) :@: (subst q r i)
 subst (Lam p) r i   = Lam (subst p (shift r 0 1) (i+1))
 
 eval :: NameEnv Term -> Term -> Term
