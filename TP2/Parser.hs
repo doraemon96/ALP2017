@@ -19,7 +19,7 @@ module Parser where
 
   num':: Integer -> LamTerm
   num' n | n == 0 = LVar "z"
-         | n >  0 = App (LVar "s") (num' n)
+         | n >  0 = App (LVar "s") (num' (n-1))
 
 -------------------------------------------------
 -- Parser de Lambda Cálculo (Gramatica Extendida) 

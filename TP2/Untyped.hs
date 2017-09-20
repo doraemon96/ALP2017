@@ -27,17 +27,22 @@ conversion' l (Abs s p) = Lam (conversion' (s:l) p)
 -------------------------------
 
 shift :: Term -> Int -> Int -> Term
-shift = undefined
+shift (Bound n) c d = if n < c
+                      then (Bound n)
+                      else (Bound n+d)
+--shift (Free x) c d  = (Free x) PREGUNTAR
+shift (p :@: q) c d = (shift p c d) :@: (shift q c d)
+shift (Lam p) c d   = Lam (shift p (c+1) d)
   
   
 subst :: Term -> Term -> Int -> Term
-subst = undefined	
-
+subst (Bound n) r i = if n = i
+                      then r
+                      else n
+--subst (Free x) r i  = Free x PREGUNTAR
+subst (p :@: q) r   = (subst p r i) :@: (subst q r i)
+subst (Lam p) r i   = Lam (subst p (shift r 0 1) (i+1))
 
 eval :: NameEnv Term -> Term -> Term
 eval = undefined
-    
-    
-    
-    
     
