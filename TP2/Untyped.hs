@@ -45,12 +45,12 @@ subst (Lam p) r i   = Lam (subst p (shift r 0 1) (i+1))
 
 
 eval :: NameEnv Term -> Term -> Term
-eval env (Free x)           = case lookup x env of
-                              Just y  -> y 
-                              Nothing -> (Free x)
-eval env (Bound x)         = Bound x
-eval env ((Free x) :@: q)  = eval env ((eval env (Free x)) :@: q)
-eval env ((Bound n) :@: q) = (Bound n) :@: (eval env q)
-eval env ((x :@: y) :@: q) = (x :@: y) :@: (eval env q)
-eval env (Lam p)           = Lam (eval env p)
 eval env ((Lam p) :@: q)   = eval env (shift (subst p (shift q 0 1) 0) 0 (-1))
+eval env (p :@: q)         = case eval env p of
+                             (Lam r) -> eval env ((Lam r) :@: q)
+                             x       -> x :@: (eval env q)
+eval env (Free x)          = case lookup x env of
+                             Just y  -> eval env y 
+                             Nothing -> (Free x)
+eval env (Bound x)         = Bound x
+eval env (Lam p)           = Lam (eval env p)
