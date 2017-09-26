@@ -1,0 +1,9 @@
+-- Menor o igual:
+def B = \f. \n m. (is0 n) true ((is0 m) false (f (pred n) (pred m)))
+def leq = Y B
+
+-- Logaritmo base 2:
+def C = \f. \a c n. (leq (mult (suc (suc zero)) a) n) (f (mult (suc (suc zero)) a) (suc c) n) c
+def loga = Y C
+def log2 = loga (suc zero) zero
+
