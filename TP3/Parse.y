@@ -25,6 +25,8 @@ import Data.Char
     VAR     { TVar $$ }
     TYPE    { TType }
     DEF     { TDef }
+    LET     { TLet }
+    IN      { TIn }
     
 
 %right VAR
@@ -45,6 +47,7 @@ Defexp  : DEF VAR '=' Exp              { Def $2 $4 }
 
 Exp     :: { LamTerm }
         : '\\' VAR ':' Type '.' Exp    { Abs $2 $4 $6 }
+        | LET VAR '=' Exp IN Exp       { Let $2 $4 $6 }
         | NAbs                         { $1 }
         
 NAbs    :: { LamTerm }
@@ -102,6 +105,8 @@ data Token = TVar String
                | TArrow
                | TEquals
                | TEOF
+               | TLet
+               | TIn
                deriving Show
 
 ----------------------------------
@@ -126,6 +131,8 @@ lexer cont s = case s of
                     where lexVar cs = case span isAlpha cs of
                                            ("B",rest)   -> cont TType rest
                                            ("def",rest) -> cont TDef rest
+                                           ("let",rest) -> cont TLet rest
+                                           ("in",rest)  -> cont TIn rest
                                            (var,rest)   -> cont (TVar var) rest
                           consumirBK anidado cl cont s = case s of
                                                                       ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs

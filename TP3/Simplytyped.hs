@@ -18,9 +18,10 @@ conversion :: LamTerm -> Term
 conversion = conversion' []
 
 conversion' :: [String] -> LamTerm -> Term
-conversion' b (LVar n)     = maybe (Free (Global n)) Bound (n `elemIndex` b)
-conversion' b (App t u)    = conversion' b t :@: conversion' b u
-conversion' b (Abs n t u)  = Lam t (conversion' (n:b) u)
+conversion' b (LVar n)      = maybe (Free (Global n)) Bound (n `elemIndex` b)
+conversion' b (App t u)     = conversion' b t :@: conversion' b u
+conversion' b (Abs n t u)   = Lam t (conversion' (n:b) u)
+conversion' b (Let n u1 u2) = LetIn (conversion' b u1) (conversion' (n:b) u2)
 
 -----------------------
 --- eval
@@ -32,12 +33,17 @@ sub _ _ (Bound j) | otherwise = Bound j
 sub _ _ (Free n)              = Free n
 sub i t (u :@: v)             = sub i t u :@: sub i t v
 sub i t (Lam t' u)            = Lam t' (sub (i+1) t u)
+sub i t (LetIn u1 u2)         = LetIn (sub i t u1) (sub (i+1) t u2)
 
 -- evaluador de términos
 eval :: NameEnv Value Type -> Term -> Value
 eval _ (Bound _)             = error "variable ligada inesperada en eval"
 eval e (Free n)              = fst $ fromJust $ lookup n e
 eval _ (Lam t u)             = VLam t u
+eval e (LetIn (Lam s v) u)   = eval e (sub 0 (Lam s v) u)
+eval e (LetIn u1 u2)         = case eval e u1 of
+                 VLam t u -> eval e (sub 0 (Lam t u) u)
+                 _        -> error "Error de tipo en run-time (letin)"
 eval e (Lam _ u :@: Lam s v) = eval e (sub 0 (Lam s v) u)
 eval e (Lam t u :@: v)       = case eval e v of
                  VLam t' u' -> eval e (Lam t u :@: Lam t' u')
@@ -99,4 +105,6 @@ infer' c e (t :@: u) = infer' c e t >>= \tt ->
                          _         -> notfunError tt
 infer' c e (Lam t u) = infer' (t:c) e u >>= \tu ->
                        ret $ Fun t tu
+infer' c e (LetIn u1 u2) = infer' c e u1 >>= \tu1 ->
+                           infer' (tu1:c) e u2
 ----------------------------------
