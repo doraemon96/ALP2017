@@ -22,7 +22,7 @@ module Common where
             | TUnit
             | TTuple Type Type
             | Fun Type Type
-
+            | Nat
             deriving (Show, Eq)
   
   -- Términos con nombres
@@ -35,6 +35,9 @@ module Common where
                 |  LTuple LamTerm LamTerm
                 |  LFst LamTerm
                 |  LSnd LamTerm
+                |  LZero
+                |  LSuc LamTerm
+                |  R LamTerm LamTerm LamTerm
                 deriving (Show, Eq)
 
 
@@ -49,12 +52,18 @@ module Common where
              | Tuple Term Term
              | Fst Term
              | Snd Term
+             | Zero
+             | Suc Term
+             | R Term Term Term
           deriving (Show, Eq)
 
   -- Valores
   data Value = VLam Type Term 
-             | VTuple Term Term
-             | VUnit 
+             | VTuple Value Value
+             | VUnit
+             | VNat NatValue
+  data NatValue = Zero
+                | Suc NatValue
 
   -- Contextos del tipado
   type Context = [Type]

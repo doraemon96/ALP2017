@@ -71,26 +71,6 @@ printType (TTuple t1 t2)= text "(" <>
                           text ")"
 printType (Fun t1 t2)   = sep [ parensIf (isFun t1) (printType t1), 
                                text "->", 
-
-isLam :: Term -> Bool                    
-isLam (Lam _ _) = True
-isLam  _      = False
-
-isApp :: Term -> Bool        
-isApp (_ :@: _) = True
-isApp _         = False                                                               
-
--- pretty-printer de tipos
-printType :: Type -> Doc
-printType Base          = text "B"
-printType TUnit         = text "Unit"
-printType (TTuple t1 t2)= text "(" <>
-                          printType t1 <>
-                          text "," <>
-                          printType t2 <>
-                          text ")"
-printType (Fun t1 t2)   = sep [ parensIf (isFun t1) (printType t1), 
-                               text "->", 
                                printType t2]
 isFun :: Type -> Bool
 isFun (Fun _ _)        = True
