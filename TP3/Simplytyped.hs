@@ -18,11 +18,15 @@ conversion :: LamTerm -> Term
 conversion = conversion' []
 
 conversion' :: [String] -> LamTerm -> Term
+conversion' _ LUnit         = Unit
 conversion' b (LVar n)      = maybe (Free (Global n)) Bound (n `elemIndex` b)
 conversion' b (App t u)     = conversion' b t :@: conversion' b u
 conversion' b (Abs n t u)   = Lam t (conversion' (n:b) u)
 conversion' b (Let n u1 u2) = LetIn (conversion' b u1) (conversion' (n:b) u2)
 conversion' b (LAs u t)     = As t (conversion' b u)
+conversion' b (Tuple u1 u2) = Tuple (conversion' b u1) (conversion' b u2)
+conversion' b (LFst u)      = Fst (conversion' b u)
+conversion' b (LSnd u)      = Snd (conversion' b u)
 
 -----------------------
 --- eval
@@ -36,19 +40,30 @@ sub i t (u :@: v)             = sub i t u :@: sub i t v
 sub i t (Lam t' u)            = Lam t' (sub (i+1) t u)
 sub i t (LetIn u1 u2)         = LetIn (sub i t u1) (sub (i+1) t u2)
 sub i t (As t' u)             = As t' (sub i t u)
+sub _ _ Unit                  = Unit
+sub i t (Tuple u1 u2)         = Tuple (sub i t u1) (sub i t u2)
+sub i t (Fst u)               = Fst (sub i t u) --Optimizar?
+sub i t (Snd u)               = Snd (sub i t u) --Optimizar?
 
 -- evaluador de términos
 eval :: NameEnv Value Type -> Term -> Value
+eval _ Unit                  = VUnit
 eval _ (Bound _)             = error "variable ligada inesperada en eval"
 eval e (Free n)              = fst $ fromJust $ lookup n e
 eval _ (Lam t u)             = VLam t u
 eval e (LetIn u1 u2)         = case eval e u1 of
                  VLam t u -> eval e (sub 0 (Lam t u) u2)
-                 _        -> error "Error de tipo en run-time (let)"
-eval e (As t (Lam t' u'))   = (VLam t' u')
+                 _        -> error "Error de tipo en run-time"
 eval e (As t u)              = case eval e u of
-                 VLam t' u' -> eval e (As t (Lam t' u'))
-                 _        -> error "Error de tipo en run-time (as)"
+                 VLam t' u' -> (VLam t' u')
+                 _          -> error "Error de tipo en run-time"
+eval e (Tuple u1 u2)         = VTuple u1 u2
+eval e (Fst u)               = case eval e u of
+                 VTuple u1 _ -> eval e u1
+                 _           -> error "Error de tipo en run-time"
+eval e (Snd u)               = case eval e u of
+                 VTuple _ u2 -> eval e u2
+                 _           -> error "Error de tipo en run-time"
 eval e (Lam _ u :@: Lam s v) = eval e (sub 0 (Lam s v) u)
 eval e (Lam t u :@: v)       = case eval e v of
                  VLam t' u' -> eval e (Lam t u :@: Lam t' u')
@@ -62,7 +77,9 @@ eval e (u :@: v)             = case eval e u of
 -----------------------
 
 quote :: Value -> Term
-quote (VLam t f) = Lam t f
+quote (VLam t f)   = Lam t f
+quote VUnit        = Unit
+quote VTuple f1 f2 = Tuple f1 f2
 
 ----------------------
 --- type checker
@@ -97,6 +114,7 @@ notfoundError :: Name -> Either String Type
 notfoundError n = err $ show n ++ " no está definida."
 
 infer' :: Context -> NameEnv Value Type -> Term -> Either String Type
+infer' _ _ Unit = ret TUnit
 infer' c _ (Bound i) = ret (c !! i)
 infer' _ e (Free n) = case lookup n e of
                         Nothing -> notfoundError n
@@ -118,4 +136,13 @@ infer' c e (As t u) = let t' = infer' c e u in
                                        then ret t
                                        else matchError t t'' --TODO: Preguntar
                           l -> l
+infer' c e (Tuple u1 u2) = ret (TTuple (infer' c e u1) (infer' c e u2))
+infer' c e (Fst u) = infer' c e u >>= \tt ->
+                       case tt of
+                        TTuple t1 _ -> ret t1
+                        else matchError t1 tt
+infer' c e (Snd u) = infer' c e u >>= \tt ->
+                       case tt of
+                        TTuple _ t2 -> ret t2
+                        else matchError t2 tt
 ----------------------------------

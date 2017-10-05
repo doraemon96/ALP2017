@@ -19,6 +19,8 @@ module Common where
 
   -- Tipo de los tipos
   data Type = Base 
+            | TUnit
+            | TTuple Type Type
             | Fun Type Type
 
             deriving (Show, Eq)
@@ -29,6 +31,10 @@ module Common where
                 |  App LamTerm LamTerm
                 |  Let String LamTerm LamTerm
                 |  LAs LamTerm Type
+                |  LUnit
+                |  LTuple LamTerm LamTerm
+                |  LFst LamTerm
+                |  LSnd LamTerm
                 deriving (Show, Eq)
 
 
@@ -39,10 +45,15 @@ module Common where
              | Lam Type Term
              | LetIn Term Term
              | As Type Term
+             | Unit
+             | Tuple Term Term
+             | Fst Term
+             | Snd Term
           deriving (Show, Eq)
 
   -- Valores
   data Value = VLam Type Term 
+             | VTuple Term Term
              | VUnit 
 
   -- Contextos del tipado

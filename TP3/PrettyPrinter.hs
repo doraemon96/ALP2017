@@ -18,6 +18,7 @@ parensIf False = id
 -- pretty-printer de términos
 
 pp :: Int -> [String] -> Term -> Doc
+pp _  _  (Unit)            = text "unit"
 pp ii vs (Bound k)         = text (vs !! (ii - k - 1))
 pp _  _  (Free (Global s)) = text s
 
@@ -41,6 +42,15 @@ pp ii vs (As t c) = text "(" <>
                     text " AS " <>
                     printType t <>
                     text ")"
+pp ii vs (Tuple c1 c2) = text "(" <>
+                         pp ii vs c1 <>
+                         text "," <>
+                         pp ii vs c2 <>
+                         text ")"
+pp ii vs (Fst c) = text "fst " <> 
+                   pp ii vs c
+pp ii vs (Snd c) = text "snd " <> 
+                   pp ii vs c
 
 isLam :: Term -> Bool                    
 isLam (Lam _ _) = True
@@ -52,8 +62,34 @@ isApp _         = False
 
 -- pretty-printer de tipos
 printType :: Type -> Doc
-printType Base         = text "B"
-printType (Fun t1 t2)  = sep [ parensIf (isFun t1) (printType t1), 
+printType Base          = text "B"
+printType TUnit         = text "Unit"
+printType (TTuple t1 t2)= text "(" <>
+                          printType t1 <>
+                          text "," <>
+                          printType t2 <>
+                          text ")"
+printType (Fun t1 t2)   = sep [ parensIf (isFun t1) (printType t1), 
+                               text "->", 
+
+isLam :: Term -> Bool                    
+isLam (Lam _ _) = True
+isLam  _      = False
+
+isApp :: Term -> Bool        
+isApp (_ :@: _) = True
+isApp _         = False                                                               
+
+-- pretty-printer de tipos
+printType :: Type -> Doc
+printType Base          = text "B"
+printType TUnit         = text "Unit"
+printType (TTuple t1 t2)= text "(" <>
+                          printType t1 <>
+                          text "," <>
+                          printType t2 <>
+                          text ")"
+printType (Fun t1 t2)   = sep [ parensIf (isFun t1) (printType t1), 
                                text "->", 
                                printType t2]
 isFun :: Type -> Bool
@@ -61,12 +97,16 @@ isFun (Fun _ _)        = True
 isFun _                = False
 
 fv :: Term -> [String]
+fv Unit              = []
 fv (Bound _)         = []
 fv (Free (Global n)) = [n]
 fv (t :@: u)         = fv t ++ fv u
 fv (Lam _ u)         = fv u
 fv (LetIn c1 c2)     = fv c1 ++ fv c2
 fv (As t c)          = fv c
+fv (Tuple c1 c2)     = fv c1 ++ fv c2
+fv (Fst c)           = fv c
+fv (Snd c)           = fv c
   
 ---
 printTerm :: Term -> Doc 
