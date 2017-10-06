@@ -1,3 +1,7 @@
 def I = \x:B. x
 def K = \x:B.\y:B.x
 def S = \x:B->B->B.\y:B->B.\z:B.(x z) (y z)
+
+def Succ = \x:Nat. \y:Nat. suc x
+def Pred = \x:Nat. R 0 (\x:Nat. \y:Nat. y) x
+def Suma = \x:Nat. \y:Nat. R x Succ y

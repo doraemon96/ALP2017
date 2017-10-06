@@ -1,0 +1,4 @@
+def P = \n:Nat. (suc n)
+def U = \x:(Nat->Nat). \y:Nat. \r:Nat. (R (x (suc 0)) (\z:Nat. (\w:Nat. x z)) r )
+
+def Ack = \t:Nat. R P U t

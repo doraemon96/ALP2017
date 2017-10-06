@@ -37,7 +37,7 @@ module Common where
                 |  LSnd LamTerm
                 |  LZero
                 |  LSuc LamTerm
-                |  R LamTerm LamTerm LamTerm
+                |  LRec LamTerm LamTerm LamTerm
                 deriving (Show, Eq)
 
 
@@ -54,7 +54,7 @@ module Common where
              | Snd Term
              | Zero
              | Suc Term
-             | R Term Term Term
+             | Rec Term Term Term
           deriving (Show, Eq)
 
   -- Valores
@@ -62,8 +62,8 @@ module Common where
              | VTuple Value Value
              | VUnit
              | VNat NatValue
-  data NatValue = Zero
-                | Suc NatValue
+  data NatValue = NZero
+                | NSuc NatValue
 
   -- Contextos del tipado
   type Context = [Type]

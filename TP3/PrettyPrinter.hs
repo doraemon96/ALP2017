@@ -51,6 +51,21 @@ pp ii vs (Fst c) = text "fst " <>
                    pp ii vs c
 pp ii vs (Snd c) = text "snd " <> 
                    pp ii vs c
+pp ii vs Zero = text "0"
+pp ii vs (Suc Zero) = text "Suc " <>
+                      pp ii vs Zero
+pp ii vs (Suc c) = text "Suc " <>
+                   text "(" <>
+                   pp ii vs c <>
+                   text ")"
+pp ii vs (Rec c1 c2 c3) = text "Rec " <>
+                          text "(" <>
+                          pp ii vs c1 <>
+                          text " " <>
+                          pp ii vs c2 <>
+                          text " " <>
+                          pp ii vs c3 <>
+                          text ")"
 
 isLam :: Term -> Bool                    
 isLam (Lam _ _) = True
@@ -72,6 +87,9 @@ printType (TTuple t1 t2)= text "(" <>
 printType (Fun t1 t2)   = sep [ parensIf (isFun t1) (printType t1), 
                                text "->", 
                                printType t2]
+printType Nat           = text "Nat"
+
+
 isFun :: Type -> Bool
 isFun (Fun _ _)        = True
 isFun _                = False
@@ -87,6 +105,9 @@ fv (As t c)          = fv c
 fv (Tuple c1 c2)     = fv c1 ++ fv c2
 fv (Fst c)           = fv c
 fv (Snd c)           = fv c
+fv Zero              = []
+fv (Suc c)           = fv c
+fv (Rec c1 c2 c3)    = fv c1 ++ fv c2 ++ fv c3
   
 ---
 printTerm :: Term -> Doc 

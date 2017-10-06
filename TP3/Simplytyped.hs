@@ -18,15 +18,18 @@ conversion :: LamTerm -> Term
 conversion = conversion' []
 
 conversion' :: [String] -> LamTerm -> Term
-conversion' _ LUnit          = Unit
-conversion' b (LVar n)       = maybe (Free (Global n)) Bound (n `elemIndex` b)
-conversion' b (App t u)      = conversion' b t :@: conversion' b u
-conversion' b (Abs n t u)    = Lam t (conversion' (n:b) u)
-conversion' b (Let n u1 u2)  = LetIn (conversion' b u1) (conversion' (n:b) u2)
-conversion' b (LAs u t)      = As t (conversion' b u)
-conversion' b (LTuple u1 u2) = Tuple (conversion' b u1) (conversion' b u2)
-conversion' b (LFst u)       = Fst (conversion' b u)
-conversion' b (LSnd u)       = Snd (conversion' b u)
+conversion' _ LUnit           = Unit
+conversion' b (LVar n)        = maybe (Free (Global n)) Bound (n `elemIndex` b)
+conversion' b (App t u)       = conversion' b t :@: conversion' b u
+conversion' b (Abs n t u)     = Lam t (conversion' (n:b) u)
+conversion' b (Let n u1 u2)   = LetIn (conversion' b u1) (conversion' (n:b) u2)
+conversion' b (LAs u t)       = As t (conversion' b u)
+conversion' b (LTuple u1 u2)  = Tuple (conversion' b u1) (conversion' b u2)
+conversion' b (LFst u)        = Fst (conversion' b u)
+conversion' b (LSnd u)        = Snd (conversion' b u)
+conversion' b LZero           = Zero
+conversion' b (LSuc u)       = Suc (conversion' b u)
+conversion' b (LRec u1 u2 u3) = Rec (conversion' b u1) (conversion' b u2) (conversion' b u3)
 
 -----------------------
 --- eval
@@ -44,6 +47,9 @@ sub _ _ Unit                  = Unit
 sub i t (Tuple u1 u2)         = Tuple (sub i t u1) (sub i t u2)
 sub i t (Fst u)               = Fst (sub i t u) --Optimizar?
 sub i t (Snd u)               = Snd (sub i t u) --Optimizar?
+sub i t Zero                  = Zero
+sub i t (Suc u)               = Suc (sub i t u) --Suc u?
+sub i t (Rec u1 u2 u3)        = Rec (sub i t u1) (sub i t u2) (sub i t u3)
 
 -- evaluador de términos
 eval :: NameEnv Value Type -> Term -> Value
@@ -67,15 +73,29 @@ eval e (Lam t u :@: v)       = eval e (sub 0 (quote (eval e v)) u)
 eval e (u :@: v)             = case eval e u of
                  VLam t u' -> eval e (Lam t u' :@: v)
                  _         -> error "Error de tipo en run-time, verificar type checker"
+eval e Zero                  = VNat NZero
+eval e (Suc u)               = case eval e u of
+                 VNat u' -> VNat (NSuc u')
+                 _       -> error "Error de tipo en run-time"
+eval e (Rec u v w)           = case eval e w of
+                 VNat NZero    -> eval e u
+                 VNat (NSuc n) -> let w' = (nquote n) in
+                                  eval e ((v :@: (Rec u v w')) :@: w')
 
 -----------------------
 --- quoting
 -----------------------
 
 quote :: Value -> Term
-quote (VLam t f)     = Lam t f
-quote VUnit          = Unit
-quote (VTuple f1 f2) = Tuple (quote f1) (quote f2)
+quote (VLam t f)      = Lam t f
+quote VUnit           = Unit
+quote (VTuple f1 f2)  = Tuple (quote f1) (quote f2)
+quote (VNat NZero)    = Zero
+quote (VNat (NSuc f)) = Suc (nquote f)
+
+nquote :: NatValue -> Term
+nquote NZero    = Zero
+nquote (NSuc n) = Suc (nquote n)
 
 ----------------------
 --- type checker
@@ -143,4 +163,25 @@ infer' c e (Snd u) = infer' c e u >>= \tt ->
                        case tt of
                         TTuple _ t2 -> ret t2
                         _           -> err "No tuple"
+infer' c e Zero = ret Nat
+infer' c e (Suc u) = infer' c e u >>= \tt ->
+                       case tt of
+                        Nat -> ret Nat
+                        _   -> err "No nat"
+infer' c e (Rec u1 u2 u3) = infer' c e u1 >>= \tt1 ->
+                            (
+                                infer' c e u2 >>= \tt2 ->
+                                (
+                                 if tt2 == Fun (Fun tt1 Nat) tt1
+                                    || tt2 == Fun tt1 (Fun Nat tt1)
+                                 then
+                                   infer' c e u3 >>= \tt3 ->
+                                   (
+                                    case tt3 of
+                                     Nat -> ret tt1
+                                     _   -> err "No rec"
+                                   )
+                                 else err "No rec"
+                                )
+                            )
 ----------------------------------
