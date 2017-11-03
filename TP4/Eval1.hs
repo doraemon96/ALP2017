@@ -5,7 +5,7 @@ import Control.Applicative (Applicative(..))
 import Control.Monad       (liftM, ap)  
 
 -- Estados
-type Env = [(Variable,Integer)]
+type Env = [(Variable,Int)]
 
 -- Estado nulo
 initState :: Env
@@ -30,9 +30,9 @@ instance Applicative State where
 -- Clase para representar mónadas con estado de variables
 class Monad m => MonadState m where
     -- Busca el valor de una variable
-    lookfor :: Variable -> m Integer
+    lookfor :: Variable -> m Int
     -- Cambia el valor de una variable
-    update :: Variable -> Integer -> m ()
+    update :: Variable -> Int -> m ()
 
 instance MonadState State where
     lookfor v = State (\s -> (lookfor' v s, s))
