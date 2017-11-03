@@ -1,0 +1,118 @@
+\nonstopmode
+
+\documentclass[a4paper,10pt]{article}
+\usepackage{listings}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{adjustbox}
+\usepackage{indentfirst}
+
+\usepackage{proof}
+%\usepackage{minted}
+%\usemintedstyle{bw}
+
+
+\author{
+    Güella Julio Joaquín \\
+    \texttt{julioguella@hotmail.com}
+    \and
+    Soncini Nicolás \\
+    \texttt{soncininicolas@gmail.com}
+}
+
+\date{
+    2 de Noviembre de 2017
+}
+
+\title{
+    \Huge \textsc{Trabajo Práctico 4} \\
+    \large \textsc{Análisis de Lenguajes de Programación} \\
+}
+
+\begin{document}
+
+\bigskip
+\bigskip
+\bigskip
+
+\maketitle
+
+\thispagestyle{empty}
+
+\begin{center}
+\large \bf Docentes de la materia
+\end{center}
+
+\begin{center}
+Mauro Jaskelioff
+
+Eugenia Simich
+
+Cecila Manzino
+
+Juan M. Rabasedas
+\end{center}
+
+\newpage{}
+
+
+\part*{Ejercicio 1}
+Complete el evaluador simple
+
+\section*{Demuestre que State es efectivamente una mónada}
+\textbf{(monad.1)}
+
+
+$(\text{return} x) >>= f$ \\
+=\textlangle Definicion de $>>=$ para State \textrangle \\
+\begin{tabular}
+    $(\text{State} \lambda s \rightarrow$ & $\text{let} (v,s') = \text{runState} (\text{return} x) s$ \\
+                                          & $\text{in runState} (f v) s')$ \\
+\end{tabular}
+=\textlangle Definicion de return para State \textrangle \\
+\begin{tabular}
+    $(\text{State} \lambda s \rightarrow$ & $\text{let} (v,s') = \text{runState} (\text{State} (\lambda s_2 \rightarrow (x,s_2))) s$ \\
+                                          & $\text{in runState} (f v) s')$ \\
+\end{tabular}
+=\textlangle Desencapsulacion de State con runState \textrangle \\
+\begin{tabular}
+    $(\text{State} \lambda s \rightarrow$ & $\text{let} (v,s') = (\lambda s_2 \rightarrow (x,s_2)) s$ \\
+                                          & $\text{in runState} (f v) s')$ \\
+\end{tabular}
+=\textlangle Aplicacion de $\lambda$-abstracción \textrangle \\
+\begin{tabular}
+    $(\text{State} \lambda s \rightarrow$ & $\text{let} (v,s') = (x,s)$ \\
+                                          & $\text{in runState} (f v) s')$ \\
+\end{tabular}
+=\textlangle Definición de let \textrangle \\
+    $(\text{State} \lambda s \rightarrow \text{in runState} (f x) s)$ \\
+=\textlangle  \textrangle \\
+
+
+
+\textbf{(monad.2)}
+
+\begin{tabular} {l c l}
+intexp  & ::=     & ... \\
+        & $\vert$ & boolexp \textbf{?} intexp \textbf{:} intexp
+\end{tabular}
+
+\textbf{(monad.3)}
+
+\begin{tabular} {l c l}
+intexp  & ::=     & ... \\
+        & $\vert$ & boolexp \textbf{?} intexp \textbf{:} intexp
+\end{tabular}
+
+
+\section*{Implemente el evaluador utilizando la monada State}
+\begin{tabular} {l c l}
+intexp  & ::=     & ... \\
+        & $\vert$ & boolexp \textbf{'?'} intexp \textbf{':'} comm
+\end{tabular}
+
+\end{document}
