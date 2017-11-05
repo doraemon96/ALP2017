@@ -61,7 +61,7 @@ evalComm (Repeat c b)   = do evalComm c
                              if b' then return () else evalComm (Repeat c b)
 
 -- Evalua una expresion entera, sin efectos laterales
-evalIntExp :: MonadState m => IntExp -> m Integer
+evalIntExp :: MonadState m => IntExp -> m Int
 evalIntExp (Const n)     = return n
 evalIntExp (Var v)       = lookfor v
 evalIntExp (UMinus e)    = do e' <- evalIntExp e
