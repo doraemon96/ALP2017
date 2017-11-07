@@ -59,8 +59,8 @@ instance MonadError StateError where
     throw err = StateError (\s -> Left err)
 
 -- Evalua un programa en el estado nulo
-eval :: Comm -> Env
-eval p = either (error . show) snd (runStateError (evalComm p) initState)
+eval :: Comm -> Either Error Env
+eval p = either Left (Right . snd) (runStateError (evalComm p) initState)
 
 -- Evalua un comando en un estado dado
 evalComm :: (MonadState m, MonadError m) => Comm -> m ()

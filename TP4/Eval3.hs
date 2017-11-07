@@ -69,8 +69,8 @@ initLog :: [CommLog]
 initLog = []
 
 -- Evalua un programa en el estado nulo
-eval :: Comm -> (Env,[CommLog])
-eval p = either (error . show) (\(x,e,l) -> (e,l)) (runSEL (evalComm p) initState initLog)
+eval :: Comm -> Either Error (Env,[CommLog])
+eval p = either Left (\(x,e,l) -> Right (e,l)) (runSEL (evalComm p) initState initLog)
 
 -- Evalua un comando en un estado dado
 evalComm :: (MonadState m, MonadError m, MonadLog m) => Comm -> m ()
