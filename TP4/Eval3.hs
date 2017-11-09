@@ -17,11 +17,12 @@ instance Show Error where
   show (UndefVar v) = "Error: Variable " ++ show v ++ " indefinida."
 
 -- Monada Log
-newtype StateErrorLog a = StateErrorLog {runSEL :: Env -> [CommLog] -> Either Error (a, Env, [CommLog])}
+newtype StateErrorLog a = StateErrorLog {runSEL :: Env -> (Either Error (a, Env), [CommLog])}
 
 instance Monad StateErrorLog where
-    return x = StateErrorLog (\e l -> Right (x, e, l))
-    m >>= f  = StateErrorLog (\e l -> either Left (\(x,e',l') -> runSEL (f x) e' l') (runSEL m e l))
+    return x = StateErrorLog (\e -> (Right (x, e),[]))
+    m >>= f  = StateErrorLog (\e -> case runSEL m e of (Left err, l)     -> (Left err, l)
+                                                       (Right (x,e'), l) -> (fst p, snd p ++ l) where p = runSEL (f x) e')
 
 -- Para calmar a Mauro
 instance Functor StateErrorLog where
@@ -37,7 +38,7 @@ class Monad m => MonadLog m where
     mlog :: CommLog -> m ()
 
 instance MonadLog StateErrorLog where 
-    mlog x = StateErrorLog (\e l -> Right ((),e,x:l))
+    mlog x = StateErrorLog (\e -> (Right ((),e), [x]))
 
 -- Clase MonadError
 class Monad m => MonadError m where
@@ -45,7 +46,7 @@ class Monad m => MonadError m where
     throw :: Error -> m a
 
 instance MonadError StateErrorLog where
-    throw err = StateErrorLog (\e l -> Left err)
+    throw err = StateErrorLog (\e -> (Left err,[]))
 
 --Clase MonadState
 class Monad m => MonadState m where
@@ -55,8 +56,8 @@ class Monad m => MonadState m where
     update :: Variable -> Int -> m ()
 
 instance MonadState StateErrorLog where
-    lookfor v  = StateErrorLog (\e l -> maybe (Left (UndefVar v)) (\x -> Right (x,e,l)) (lookup v e))
-    update v i = StateErrorLog (\e l -> Right ((), update' v i e, l))
+    lookfor v  = StateErrorLog (\e -> maybe (Left (UndefVar v),[]) (\x -> (Right (x,e), [])) (lookup v e))
+    update v i = StateErrorLog (\e -> (Right ((), update' v i e), []))
                  where update' v i [] = [(v, i)]
                        update' v i ((u, _):ee) | v == u = (v, i):ee
                        update' v i ((u, j):ee) | v /= u = (u, j):(update' v i ee)
@@ -65,12 +66,9 @@ instance MonadState StateErrorLog where
 initState :: Env
 initState = []
 
-initLog :: [CommLog]
-initLog = []
-
 -- Evalua un programa en el estado nulo
-eval :: Comm -> Either Error (Env,[CommLog])
-eval p = either Left (\(x,e,l) -> Right (e,l)) (runSEL (evalComm p) initState initLog)
+eval :: Comm -> (Either Error Env, [CommLog])
+eval p = (either Left (Right . snd) (fst ans), snd ans) where ans = runSEL (evalComm p) initState
 
 -- Evalua un comando en un estado dado
 evalComm :: (MonadState m, MonadError m, MonadLog m) => Comm -> m ()
